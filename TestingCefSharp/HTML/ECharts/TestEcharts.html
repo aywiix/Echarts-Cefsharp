@@ -1,0 +1,252 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+	<script src="echarts.min.js"></script>
+</head>
+<body>
+	
+	 <input type='file'  onchange='openFile(event)'><br>
+	 <div id='output'>
+	 <div id="main" style="width: 1400px;height:600px;"></div>
+<!--<input type="file" id="fileInput">-->
+    <div id="expression" onkeydown="keyDown(event)"></div>
+	<span id="Done"></span>
+	<button onclick="Reset()">RESET</button>
+
+    <!--<div id="main" class="chart" style="width: 1550px;height:1340px;"></div>-->
+
+<script>
+   /* document.getElementById('fileInput').addEventListener('change', function selectedFileChanged() {
+      //console.log(this.files[0]); // will contain information about the file that was selected.
+	  readTextFile(this.files);
+    });*/
+	var currentData = [];
+	for (let index = 0; index < 2000000; index++) {
+		var x = Math.floor(Math.random() * 1000000);
+		var y = Math.floor(Math.random() * 1000000);
+		document.getElementById("Done").innerHTML = index;
+		var aux = [x, y];
+		currentData.push(aux);
+		
+	}
+
+	
+	
+	
+	//var option = GetOptions();
+	
+	//myChart.setOption(option);
+	
+	function testAppend(event){
+		var currentData = [10,20];
+	   
+	    myChart.appendData({
+			seriesIndex: 0,
+			data: currentData
+		});
+	}
+
+	function Reset(){
+		console.log("Reset");
+		var myChart = echarts.init(document.getElementById('main'));
+		var options = GetOptions();
+		myChart.setOption(options);
+	}
+	//myChart.on('finished', function () {
+	//	alert("OK");
+	//});
+	 function openFile(event) {
+
+		//var dat1 = new Float32Array(2);
+		//dat1[0] = 25;
+		//dat1[1] = 25;
+		//myChart.appendData({
+		//				seriesIndex: 0,
+		//				data: dat1
+		//			});
+		//console.log("working on it");
+        //var input = event.target;
+	    //var reader = new FileReader();
+		//reader.onload = function(event){
+		//		console.log(event);
+		//		var contents = event.target.result;
+		//		var lines = contents.split('\n');
+				
+		//		for (var i = 0; i < lines.length; i += 2) {
+		//			var items = lines[i].split(',');
+		//			var data = new Float32Array(items.length);
+		//			data[0] = items[0] ;
+		//			data[1] = items[1] ;
+		//			console.log(data);
+		//			myChart.appendData({
+		//				seriesIndex: 0,
+		//				data: data
+		//			});
+		//		}
+
+		
+    	myChart.appendData({
+			seriesIndex: 0,
+			data: currentData
+		});
+		myChart.dispatchAction({ silent: true });
+		//var currentData1 = [];
+		//for (let index = 0; index < 500000; index++) {
+		//	var x = Math.floor(Math.random() * 100000);
+		//	var y = Math.floor(Math.random() * 100000);
+		//	document.getElementById("Done").innerHTML = index;
+		//	var aux = [x, y];
+		//	currentData1.push(aux);
+			
+		//}
+		//myChart.appendData({
+		//	seriesIndex: 0,
+		//	data: currentData1
+		//});
+				
+		//};
+		//reader.readAsText(input.files[0]);
+		
+	   // var currentData = [1000,1000];
+	   
+	  
+
+		//var currentData1 = [[60.0, 7.24]];
+
+		//myChart.appendData({
+		//	seriesIndex: 0,
+		//	data: currentData1
+		//});
+        //reader.readAsText(input.files[0]);
+		console.log("Done");
+	  };
+	  
+	  function GetOptions(){
+		var		option = {
+					progressive: 20000,
+				feature:{
+					dataView:{
+						show:true,
+					}
+				},
+				xAxis: {max:function (value) {
+							return value.max + 20;
+						}},
+				yAxis: {max:function (value) {
+							return value.max + 20;
+						}},
+				postEffect: {
+					enable: true
+				},
+				silent: true,
+				dataZoom: [{
+					type: 'inside'
+				}, {
+					type: 'slider'
+				},{
+					yAxisIndex: 0
+				}],
+				series: [{
+					symbolSize: 20,
+					data: currentData,
+					large: true,
+					type: 'scatter'
+			}]
+		};
+		
+		return option;
+	  }
+</script>
+
+    <script type="text/javascript">
+/*
+	function upload(input){
+		var xhr = new XMLHttpRequest();
+		xhr.upload.onprogress = function(e) {
+			console.log(e.loaded, e.total)
+		}
+		xhr.upload.onload = function(e) {
+			console.log('file upload')
+		}
+
+		xhr.open("POST", "/test/uploadfile.php", true);
+		xhr.send(new FormData(input.parentElement));
+	}
+
+
+var dataCount = 0;
+var CHUNK_COUNT = 230;
+
+function readTextFile(file)
+{
+console.log(file);
+    var rawFile = new XMLHttpRequest();
+    rawFile.open("GET", file, false);
+    rawFile.onreadystatechange = function ()
+    {
+        if(rawFile.readyState === 4)
+        {
+            if(rawFile.status === 200 || rawFile.status == 0)
+            {
+                var allText = rawFile.responseText;
+                alert(allText);
+            }
+        }
+    }
+    rawFile.send(null);
+}
+
+function readTextFile(file)
+{
+
+    var txt = '';
+	var xmlhttp = new XMLHttpRequest();
+	xmlhttp.onreadystatechange = function(){
+	  if(xmlhttp.status == 200 && xmlhttp.readyState == 4){
+		txt = xmlhttp.responseText;
+	  }
+	};
+	xmlhttp.open("GET",'data.txt',true);
+	xmlhttp.send();
+	console.log(txt);
+}
+
+function fetchData() {
+    //if (idx >= CHUNK_COUNT) {
+    //    return;
+    //}
+    var file = 'data.txt';
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', file, false);
+    xhr.responseType = 'arraybuffer';
+
+    xhr.onload = function (e) {
+        var rawData = new Int32Array(this.response);
+        var data = new Float32Array(rawData.length);
+        var addedDataCount = rawData.length / 2;
+        for (var i = 0; i < rawData.length; i += 2) {
+            data[i] = rawData[i+1] / 1e7;
+            data[i+1] = rawData[i] / 1e7;
+        }
+
+        //myChart.appendData({
+        //    seriesIndex: 0,
+        //    data: data
+        //});
+
+        //fetchData(idx + 1);
+    }
+
+    xhr.send();
+}
+
+
+ 
+readTextFile("file://D:/Branches/PER-13078(26-03-2020)/per/Fenix.Visao/bin/Debug/Resources/Statics/EChartsdata.txt");
+*/
+    </script>
+</body>
+</html>

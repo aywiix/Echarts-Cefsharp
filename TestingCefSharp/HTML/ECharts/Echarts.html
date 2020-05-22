@@ -1,0 +1,1031 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<meta charset="utf-8" />
+	<title></title>
+	<style>
+		tr.spaceUnder > td {
+			padding-bottom: 0em;
+		}
+	</style>
+</head>
+<body>
+
+	<button onclick="InitChartDense()">Restart</button><button onclick="BoundLoad()">Start</button>   <h2 id="chronotime" style="display: inline; float: right">0:00:00:00</h2>
+
+
+	<script src="echarts.min.js"></script>
+	<span id="Done"></span>
+	<table style="width:100%; margin-top:-10px">
+		<tr>
+			<td style="min-width: 950px;width: 950px;height:740px;">
+				<div id="dense" class="chart" style="width: 950px;height:740px;display:none;margin-top:-50px"></div>
+				<div id="main" class="chart" style="  width: 650px;height: 540px;display: none;"></div>
+				<div id="Bar" class="chart" style="width: 650px;height:540px;display:none;"></div>
+				<div id="simplebars" class="chart" style="width: 650px;height:540px;display:none;"></div>
+				<div id="bars" class="chart" style="width: 650px;height:540px;display:none;"></div>
+				<div id="line" class="chart" style="width: 650px; height: 540px;display:none;"></div>
+				<div id="scatter" class="chart" style="width: 650px;height:540px;display:none;"></div>
+				<div id="stackedline" class="chart" style="width: 650px;height:540px;display:none;"></div>
+				<div id="dispersion" class="chart" style="width: 650px;height:540px;display:none;"></div>
+				<div id="points" class="chart" style="width: 650px;height:540px;display:none;"></div>
+				<div id="barzoom" class="chart" style="width: 650px;height:540px;display:none;"></div>
+				<div id="lifeexpected" class="chart" style="width: 650px;height:540px;display:none;"></div>
+				<div id="denseline" class="chart" style="width: 950px;height:740px;display:none;"></div>
+				<div id="densebar" class="chart" style="width: 950px;height:740px;display:none;"></div>
+				<div id="dynamic" class="chart" style="width: 650px;height:540px;display:none;"></div>
+			</td>
+			<td>
+				<table>
+					<tr>
+						<th style="width:100px">Name</th>
+						<th style="width:100px">Input</th>
+
+					</tr>
+					<tr>
+						<td><label> Input Format</label></td>
+						<td>
+							<select id="testes-types">
+								<option value="bound">Bound Object</option>
+								<option value="json">JSON</option>
+								<option value="csv">CSV</option>
+								<option value="bin">BIN</option>
+								<option value="avro">Avro</option>
+								<option value="parquet">Parquet</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td><label> Chart</label></td>
+						<td>
+							<select id="chart-types">
+								<option value="bar">bar</option>
+								<option value="line">line</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<label> Total</label>
+						</td>
+						<td>
+							<input id="total" type="number" />
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<label> Partitions </label>
+						</td>
+						<td>
+							<input id="partitions" type="number" />
+						</td>
+					</tr>
+					<tr>
+						<td><label> #Series </label></td>
+						<td><input id="numberOfSeries" type="number" /></td>
+					</tr>
+				</table>
+
+			</td>
+
+		</tr>
+
+	</table>
+
+
+
+
+	<script type="text/javascript">
+
+		CefSharp.BindObjectAsync("boundAsync").then(function (result) {
+			
+		});
+
+		function selectProgressive() {
+			var selectBox = document.getElementById("secuence");
+			var selectedValue = selectBox.options[selectBox.selectedIndex].value;
+
+			if (selectedValue == "true") {
+				document.getElementById("partitions").disabled = false;
+				document.getElementById("numberOfSeries").disabled = false;
+			}
+			else {
+				document.getElementById("partitions").disabled = true;
+				document.getElementById("numberOfSeries").disabled = true;
+
+			}
+		}
+
+		//////////////Chrono
+
+		var startTime = 0;
+		var start = 0;
+		var end = 0;
+		var diff = 0;
+		var timerID = 0;
+
+		function chrono() {
+			end = new Date()
+			diff = end - start
+			diff = new Date(diff)
+			var msec = diff.getMilliseconds()
+			var sec = diff.getSeconds()
+			var min = diff.getMinutes()
+			var hr = diff.getHours() - 1
+			if (min < 10) {
+				min = "0" + min
+			}
+			if (sec < 10) {
+				sec = "0" + sec
+			}
+			if (msec < 10) {
+				msec = "00" + msec
+			}
+			else if (msec < 100) {
+				msec = "0" + msec
+			}
+			document.getElementById("chronotime").innerHTML = hr + ":" + min + ":" + sec + ":" + msec
+			timerID = setTimeout("chrono()", 10);
+		}
+		function chronoStart() {
+			//document.chronoForm.startstop.value = "stop!"
+			//document.chronoForm.startstop.onclick = chronoStop
+			//document.chronoForm.reset.onclick = chronoReset
+			start = new Date()
+			chrono()
+		}
+
+		function chronoReset() {
+			document.getElementById("chronotime").innerHTML = "0:00:00:000"
+			start = new Date()
+		}
+		function chronoStopReset() {
+			document.getElementById("chronotime").innerHTML = "0:00:00:000"
+			//document.chronoForm.startstop.onclick = chronoStart
+		}
+		function chronoStop() {
+			clearTimeout(timerID)
+		}
+		//////////
+
+		// based on prepared DOM, initialize echarts instance
+		var counter = 0;
+
+		// specify chart configuration item and data
+		var colors = ['#5793f3', '#d14a61', '#675bba'];
+		var counter = 1;
+		var series = [];
+		var currentSeriesXAxis = [];
+		var currentSeriesYAxis = [];
+
+		var xAxisData = [];
+		var data1 = [];
+		var data2 = [];
+		var data = [];
+
+
+		var period = 0;
+		var clock = null;
+		var denseSeries = [];
+		var denseData = [];
+
+		function InitChartDense() {
+			data1 = [];
+			denseSeries = [];
+			denseData = [];
+			xAxisData = [];
+			data = [];
+			chronoReset();
+			var partitions = parseInt(document.getElementById("partitions").value);
+			var total = parseInt(document.getElementById("total").value);
+			var numberOfSeries = parseInt(document.getElementById("numberOfSeries").value);
+			var e = document.getElementById("testes-types");
+			var value = e.options[e.selectedIndex].value;
+
+			var chartSelector = document.getElementById("chart-types");
+			var chartType = chartSelector.options[chartSelector.selectedIndex].value;
+
+			for (var i = 0; i < numberOfSeries; i++) { 
+				var se = {
+					symbolSize: 20,
+					data: [],
+					large: true,
+					type: chartType,
+					color: "#" + ((1 << 24) * Math.random() | 0).toString(16)
+				};
+
+				denseSeries.push(se);
+			}
+
+
+			//alert("Selector: " + chartType);
+			SetChart("dense");
+
+			try {
+				var ss = window.boundAsync.init(partitions, total,numberOfSeries ,value).then(function (actualResult) {
+					//alert(JSON.stringify(actualResult) + " ms");
+				});
+
+			}
+			catch (ex) {
+				alert(ex);
+			}
+		}
+		
+		function randomData() {
+			now = new Date(+now + oneDay);
+			value = value + Math.random() * 21 - 10;
+			return {
+				name: now.toString(),
+				value: [
+					[now.getFullYear(), now.getMonth() + 1, now.getDate()].join('/'),
+					Math.round(value)
+				]
+			};
+		}
+
+
+
+		function InitsBarDense() {
+
+			for (var i = 0; i < 100; i++) {
+				xAxisData.push('-' + i);
+				data1.push((Math.sin(i / 5) * (i / 5 - 10) + i / 6) * 5);
+				data2.push((Math.cos(i / 5) * (i / 5 - 10) + i / 6) * 5);
+			}
+
+			document.getElementById("Done").innerHTML = JSON.stringify(denseSeries);
+		}
+
+		function InitsScatterDense() {
+			clock = Date.now();
+
+		}
+
+		
+
+		function SetChart(item) {
+			counter += 1;
+			document.getElementById("Done").innerHTML = counter;
+			var charts = document.getElementsByClassName("chart")
+			var i;
+			for (i = 0; i < charts.length; i++) {
+				charts[i].style.display = "none";
+			}
+			var myChart = echarts.init(document.getElementById(item));
+			var options = GetOption(item);
+			myChart.setOption(options);
+			//alert("Initializando chart " + item);
+			document.getElementById(item).style.display = "block";
+			return "OK";
+		}
+
+		function Reset() {
+			counter += 1;
+			document.getElementById("Done").innerHTML = counter;
+			console.log("Reset");
+			var myChart = echarts.init(document.getElementById('dense'));
+			var options = GetOption("dense");
+
+			myChart.setOption(options);
+			document.getElementById('dense').style.display = "block";
+		}
+
+		function GetOption(chartType) {
+
+			switch (chartType.toLowerCase()) {
+				case "stackedline": {
+					return StackedLine();
+				} break;
+				case "line": {
+					return LineChart();
+				} break;
+				case "scatter": {
+					return Scatter();
+				} break;
+				case "bar": {
+					return Bar();
+				} break;
+				case "bars": {
+					return Bars();
+				} break;
+				case "simplebars": {
+					return SimpleBars();
+				} break;
+				case "dispersion": {
+					return Dispersion();
+				} break;
+				case "points": {
+					return Points();
+				} break;
+				case "barzoom": {
+					return BarZoom();
+				} break;
+				case "lifeexpected": {
+					return LifeExpected();
+				} break;
+				case "dense": {
+					return Dense();
+				} break;
+				case "denseline": {
+					return DenseLine();
+				} break;
+				case "densebar": {
+
+					return DenseBar();
+				} break;
+				case "dynamic": {
+					return Dynamic();
+				} break;
+			}
+		}
+
+		
+
+		function BoundLoad() {
+
+			chronoStart();
+
+			var partitions = parseInt(document.getElementById("partitions").value);
+			var total = parseInt(document.getElementById("total").value);
+			//var e = document.getElementById("testes-types");
+			//var value = e.options[e.selectedIndex].value;
+			var numberOfSeries = parseInt(document.getElementById("numberOfSeries").value);
+			var chartSelector = document.getElementById("testes-types");
+			var chartType = chartSelector.options[chartSelector.selectedIndex].value;
+
+
+			var secuence = Array.from(Array(partitions).keys());
+
+			var myChart = echarts.init(document.getElementById("dense"));
+
+			myChart.on('finished', () => {
+
+				chronoStop();
+			});
+
+
+
+			try {
+				(async function () {
+					for await (let i of secuence) {
+						switch (chartType) {
+							case "bin": {
+
+								window.boundAsync.bin(i).then(function (actualResult) {
+									try {
+
+										alert("here");
+										var rawData = new Float32Array(actualResult);
+										alert(rawData);
+										var param = new Float64Array(rawData.length - 2);
+										var offsetX = rawData[0];
+										var offsetY = rawData[1];
+										var off = 0;
+										var addedDataCount = 0;
+										for (var i = 2; i < rawData.length;) {
+											var count = rawData[i++];
+											param[off++] = count;
+											for (var k = 0; k < count; k++) {
+												var x = rawData[i++] + offsetX;
+												var y = rawData[i++] + offsetY;
+												param[off++] = x;
+												param[off++] = y;
+
+												addedDataCount++;
+											}
+										}
+
+										//alert(JSON.stringify(actualResult) );
+										//alert(JSON.stringify( myChart));
+										var indexT = Math.floor(Math.random() * numberOfSeries);
+										//alert("before" + indexT);
+										myChart.appendData({
+											seriesIndex: indexT,
+											data: param
+										});
+										//alert("after" + indexT);
+										myChart.resize();
+									} catch (ex) {
+										alert(ex);
+									}
+
+								});
+							} break;
+							case "csv": {
+								window.boundAsync.csv(i).then(function (actualResult) {
+									try {
+
+										//alert(JSON.stringify(actualResult) );
+										//alert(JSON.stringify( myChart));
+										var indexT = Math.floor(Math.random() * numberOfSeries);
+										//alert("before" + indexT);
+										myChart.appendData({
+											seriesIndex: indexT,
+											data: actualResult
+										});
+										//alert("after" + indexT);
+										myChart.resize();
+									} catch (ex) {
+										alert(ex);
+									}
+
+								});
+							} break;
+							case "json": {
+								window.boundAsync.json(i).then(function (actualResult) {
+									try {
+										//var rawData = new JSON.parse(actualResult);
+
+										//var param = new Float64Array(rawData.length - 2);
+										//var offsetX = parseInt(rawData[0]);
+										//var offsetY = parseInt( rawData[1]);
+										//var off = 0;
+										//var addedDataCount = 0;
+										//for (var i = 2; i < rawData.length;) {
+										//    var count = parseInt(rawData[i++]);
+										//    param[off++] = count;
+										//    for (var k = 0; k < count; k++) {
+										//        var x = parseInt( rawData[i++])) + offsetX;
+										//       var y = parseInt(rawData[i++]) + offsetY;
+										//        param[off++] = x;
+										//        param[off++] = y;
+
+										//        addedDataCount++;
+										//    }
+										//}
+
+										//alert(JSON.stringify(actualResult) );
+										//alert(JSON.stringify( myChart));
+										var indexT = Math.floor(Math.random() * numberOfSeries);
+										//alert("before" + indexT);
+										myChart.appendData({
+											seriesIndex: indexT,
+											data: param
+										});
+										//alert("after" + indexT);
+										myChart.resize();
+									} catch (ex) {
+										alert(ex);
+									}
+
+								});
+							} break;
+							case "bound": {
+								window.boundAsync.bound(i).then(function (actualResult) {
+									try {
+
+										//alert(JSON.stringify(actualResult) );
+										//alert(JSON.stringify( myChart));
+										var indexT = Math.floor(Math.random() * numberOfSeries);
+										//alert("before" + indexT);
+										myChart.appendData({
+											seriesIndex: indexT,
+											data: actualResult
+										});
+										//alert("after" + indexT);
+										myChart.resize();
+									} catch (ex) {
+										alert(ex);
+									}
+
+								});
+							} break;
+						}
+
+					}
+				})();
+			}
+			catch (ex) {
+				alert(ex);
+			}
+		}
+
+
+		function ProgresiveLoad(arr) {
+
+			//document.getElementById("Done").innerHTML = "In progress";
+			var myChart = echarts.init(document.getElementById("dense"));
+
+			//var indexT = Math.floor(Math.random() * 300);
+			myChart.appendData({
+				seriesIndex: 0,
+				data: arr
+			});
+			myChart.resize();
+			var indexer = parseInt(document.getElementById("Done").innerHTML);
+			indexer += 1;
+			//document.getElementById("Done").innerHTML += Date.now().toISOString().split('T')[1];
+			return "OK";
+		}
+
+		
+
+		function Dense() {
+
+			var partitions = parseInt(document.getElementById("partitions").value);
+			var total = parseInt(document.getElementById("total").value);
+			var prog = total / partitions;
+			var option = {
+				progressive: prog,
+				feature: {
+					dataView: {
+						show: true,
+					}
+				},
+				xAxis: {
+					max: function (value) {
+						return value.max + 20;
+					}
+				},
+				yAxis: {
+					max: function (value) {
+						return value.max + 20;
+					}
+				},
+				postEffect: {
+					enable: true
+				},
+				silent: true,
+				dataZoom: [{
+					type: 'inside'
+				}, {
+					type: 'slider'
+				}, {
+					yAxisIndex: 0
+				}],
+				series: denseSeries
+			};
+			return option;
+		}
+
+
+		
+
+		function Points() {
+
+			var seriesList = [];
+			var legends = [];
+
+			series.forEach(function (element) {
+				legends.push(element.title);
+				var currentDatas = [];
+
+				for (var i = 0; i < element.datas.length; i++) {
+					var currentPoint = [];
+					currentPoint.push(element.datas[i]);
+					currentPoint.push(element.values[i]);
+					currentDatas.push(currentPoint);
+				}
+
+				var item = {
+					name: '女性',
+					type: 'scatter',
+					data: currentDatas,
+					markArea: {
+						silent: true,
+						itemStyle: {
+							color: 'transparent',
+							borderWidth: 1,
+							borderType: 'dashed'
+						},
+						data: [[{
+							name: '女性分布区间',
+							xAxis: 'min',
+							yAxis: 'min'
+						}, {
+							xAxis: 'max',
+							yAxis: 'max'
+						}]]
+					},
+					markPoint: {
+						data: [
+							{ type: 'max', name: '最大值' },
+							{ type: 'min', name: '最小值' }
+						]
+					},
+					markLine: {
+						lineStyle: {
+							type: 'solid'
+						},
+						data: [
+							{ type: 'average', name: '平均值' },
+							{ xAxis: 160 }
+						]
+					}
+				};
+				seriesList.push(item);
+			});
+
+			var option = {
+				title: {
+					text: 'Points Chat',
+					subtext: ''
+				},
+				grid: {
+					left: '3%',
+					right: '7%',
+					bottom: '3%',
+					containLabel: true
+				},
+				tooltip: {
+					// trigger: 'axis',
+					showDelay: 0,
+					formatter: function (params) {
+						if (params.value.length > 1) {
+							return params.seriesName + ' :<br/>'
+								+ params.value[0] + 'cm '
+								+ params.value[1] + 'kg ';
+						}
+						else {
+							return params.seriesName + ' :<br/>'
+								+ params.name + ' : '
+								+ params.value + 'kg ';
+						}
+					},
+					axisPointer: {
+						show: true,
+						type: 'cross',
+						lineStyle: {
+							type: 'dashed',
+							width: 1
+						}
+					}
+				},
+				toolbox: {
+					feature: {
+						dataZoom: {},
+						brush: {
+							type: ['rect', 'polygon', 'clear']
+						}
+					}
+				},
+				brush: {
+				},
+				legend: {
+					data: legends,
+					left: 'center'
+				},
+				xAxis: [
+					{
+						type: 'value',
+						scale: true,
+						axisLabel: {
+							formatter: '{value} cm'
+						},
+						splitLine: {
+							show: false
+						}
+					}
+				],
+				yAxis: [
+					{
+						type: 'value',
+						scale: true,
+						axisLabel: {
+							formatter: '{value} kg'
+						},
+						splitLine: {
+							show: false
+						}
+					}
+				],
+				series: seriesList
+			};
+
+
+			return option;
+
+		}
+
+		function Dispersion() {
+			var currentDatas = [];
+
+			series.forEach(function (element) {
+
+				for (var i = 0; i < element.datas.length; i++) {
+					var currentPoint = [];
+					currentPoint.push(element.datas[i]);
+					currentPoint.push(element.values[i]);
+					currentDatas.push(currentPoint);
+				}
+			});
+
+			var option = {
+				title: {
+					text: 'Dispersion ',
+					left: 'center',
+					top: 0
+				},
+				visualMap: {
+					min: 15202,
+					max: 159980,
+					dimension: 1,
+					orient: 'vertical',
+					right: 10,
+					top: 'center',
+					text: ['HIGH', 'LOW'],
+					calculable: true,
+					inRange: {
+						color: ['#f2c31a', '#24b7f2']
+					}
+				},
+				tooltip: {
+					trigger: 'item',
+					axisPointer: {
+						type: 'cross'
+					}
+				},
+				xAxis: [{
+					type: 'value'
+				}],
+				yAxis: [{
+					type: 'value'
+				}],
+				series: [{
+					name: 'price-area',
+					type: 'scatter',
+					symbolSize: 5,
+					// itemStyle: {
+					//     normal: {
+					//         borderWidth: 0.2,
+					//         borderColor: '#fff'
+					//     }
+					// },
+					data: currentDatas
+				}]
+			};
+			return option;
+		}
+
+		function SimpleBars() {
+			var currentDatas = [];
+			var currentValues = [];
+
+			//document.getElementById('expression').innerHTML = JSON.stringify(series);
+
+			series.forEach(function (element) {
+				for (var i = 0; i < element.datas.length; i++) {
+					currentValues.push(element.values[i]);
+					currentDatas.push(element.datas[i]);
+				}
+			});
+
+			var option = {
+				color: ['#3398DB'],
+				tooltip: {
+					trigger: 'axis',
+					axisPointer: {            // 坐标轴指示器，坐标轴触发有效
+						type: 'shadow'        // 默认为直线，可选为：'line' | 'shadow'
+					}
+				},
+				grid: {
+					left: '3%',
+					right: '4%',
+					bottom: '3%',
+					containLabel: true
+				},
+				xAxis: [
+					{
+						type: 'category',
+						data: currentDatas,
+						axisTick: {
+							alignWithLabel: true
+						}
+					}
+				],
+				yAxis: [
+					{
+						type: 'value'
+					}
+				],
+				series: [
+					{
+						name: '直接访问',
+						type: 'bar',
+						barWidth: '60%',
+						data: currentValues
+					}
+				]
+			};
+			return option;
+		}
+
+		function LineChart() {
+
+			var option = {
+				color: colors,
+
+				tooltip: {
+					trigger: 'none',
+					axisPointer: {
+						type: 'cross'
+					}
+				},
+				legend: {
+					data: ['2015 poço', '2016 poço']
+				},
+				grid: {
+					top: 70,
+					bottom: 50
+				},
+				xAxis: currentSeriesXAxis,
+				yAxis: [
+					{
+						type: 'value'
+					}
+				],
+				series: currentSeriesYAxis
+			};
+
+			return option;
+
+		}
+
+		function Scatter() {
+
+			var currentDatas = [];
+
+			series.forEach(function (element) {
+
+				for (var i = 0; i < element.datas.length; i++) {
+					var currentPoint = [];
+					currentPoint.push(element.datas[i]);
+					currentPoint.push(element.values[i]);
+					currentDatas.push(currentPoint);
+				}
+			});
+
+			//document.getElementById('expression').innerHTML = JSON.stringify(currentDatas);
+
+			var option = {
+				xAxis: {},
+				yAxis: {},
+				series: [{
+					symbolSize: 20,
+					data: currentDatas,
+					type: 'scatter'
+				}]
+			};
+
+			return option;
+		}
+
+		function StackedLine() {
+
+			var legends = [];
+			var currentDatas = [];
+			var currentValues = [];
+
+
+			series.forEach(function (element) {
+				legends.push(element.title);
+				var item = {
+					name: element.title,
+					type: 'line',
+					stack: element.title,
+					data: element.values
+				};
+				//currentDatas = element.datas;
+				currentValues.push(item);
+			});
+
+			var option = {
+				title: {
+					text: 'Stacked Line Chart'
+				},
+				tooltip: {
+					trigger: 'axis'
+				},
+				legend: {
+					data: legends
+				},
+				grid: {
+					left: '3%',
+					right: '4%',
+					bottom: '3%',
+					containLabel: true
+				},
+				toolbox: {
+					feature: {
+						saveAsImage: {}
+					}
+				},
+				xAxis: {
+					type: 'category',
+					boundaryGap: false,
+					data: legends
+				},
+				yAxis: {
+					type: 'value'
+				},
+				series: currentValues
+			};
+
+
+
+			return option;
+		}
+
+		function Bar() {
+
+			var currentSeries = [];
+			var currentDatas = [];
+			var legends = [];
+
+			series.forEach(function (element) {
+				legends.push(element.title);
+				var item = {
+					name: element.title,
+					type: 'bar',
+					data: element.values,
+					animationDelay: function (idx) {
+						return idx * 10 + 100;
+					}
+				}
+				currentDatas = element.datas;
+				currentSeries.push(item);
+			});
+
+			var option = {
+				title: {
+					text: 'Bars'
+				},
+				legend: {
+					data: legends
+				},
+				toolbox: {
+					// y: 'bottom',
+					feature: {
+						magicType: {
+							type: ['stack', 'tiled']
+						},
+						dataView: {},
+						saveAsImage: {
+							pixelRatio: 2
+						}
+					}
+				},
+				tooltip: {},
+				xAxis: {
+					data: currentDatas,
+					splitLine: {
+						show: false
+					}
+				},
+				yAxis: {
+				},
+				series: currentSeries,
+				animationEasing: 'elasticOut',
+				animationDelayUpdate: function (idx) {
+					return idx * 5;
+				}
+			};
+
+			return option;
+		}
+
+		function Bars() {
+			var option = {
+				legend: {},
+				tooltip: {},
+				dataset: {
+					source: [
+						['product', '2012', '2013', '2014', '2015'],
+						['Matcha Latte', 41.1, 30.4, 65.1, 53.3],
+						['Milk Tea', 86.5, 92.1, 85.7, 83.1],
+						['Cheese Cocoa', 24.1, 67.2, 79.5, 86.4]
+					]
+				},
+				xAxis: [
+					{ type: 'category', gridIndex: 0 },
+					{ type: 'category', gridIndex: 1 }
+				],
+				yAxis: [
+					{ gridIndex: 0 },
+					{ gridIndex: 1 }
+				],
+				grid: [
+					{ bottom: '55%' },
+					{ top: '55%' }
+				],
+				series: [
+					// These series are in the first grid.
+					{ type: 'bar', seriesLayoutBy: 'row' },
+					{ type: 'bar', seriesLayoutBy: 'row' },
+					{ type: 'bar', seriesLayoutBy: 'row' },
+					// These series are in the second grid.
+					{ type: 'bar', xAxisIndex: 1, yAxisIndex: 1 },
+					{ type: 'bar', xAxisIndex: 1, yAxisIndex: 1 },
+					{ type: 'bar', xAxisIndex: 1, yAxisIndex: 1 },
+					{ type: 'bar', xAxisIndex: 1, yAxisIndex: 1 }
+				]
+			};
+
+			return option;
+		}
+
+	</script>
+</body>
+</html>
